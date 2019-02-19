@@ -13,22 +13,23 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest
 public class HotelServiceApplicationTests {
 
-	@Test
-	public void contextLoads() {
-		try {
-			HttpResponse<JsonNode> bestHotelResponse = Unirest.get("http://localhost:8099/availableHotel")
-					.header("accept", "application/json")
-					.queryString("fromDate","20-08-2019")
-					.queryString("toDate", "2019-09-20")
-					.queryString("city", "AJO")
-					.queryString("numberOfAdults", 3)
-					.asJson();
-			System.out.println(bestHotelResponse.getBody());
-		} catch (UnirestException e) {
-			e.printStackTrace();
-		} catch (Exception e){
-			e.printStackTrace();
-		}
-	}
+    @Test
+    public void contextLoads() {
+        try {
+            HttpResponse<JsonNode> bestHotelResponse = Unirest.get("http://localhost:8099/availableHotel")
+                    .header("accept", "application/json")
+                    .queryString("fromDate", "2019-08-20")
+                    .queryString("toDate", "2019-09-20")
+                    .queryString("city", "AJO")
+                    .queryString("numberOfAdults", 3)
+                    .basicAuth("admin1", "secret1")
+                    .asJson();
+            System.out.println(bestHotelResponse.getBody());
+        } catch (UnirestException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 }

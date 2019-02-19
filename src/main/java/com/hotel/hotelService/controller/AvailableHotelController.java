@@ -15,9 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
@@ -49,9 +47,16 @@ public class AvailableHotelController {
                                                @NotBlank(message = "city may not be empty or null")
                                                        String city,
                                                @ApiParam(value = "Number of adults should be at least 1", required = true)
-                                               @RequestParam("numberOfAdults") @Size(min = 1, message = "numberOfAdults should be at least one adult")
-                                               @NotBlank(message = "numberOfAdults may not be empty or null")
+                                               @RequestParam("numberOfAdults") @Min(value = 1, message = "numberOfAdults should be at least one adult")
+                                               @NotNull(message = "numberOfAdults may not be null")
                                                        int numberOfAdults) {
+
+        LocalDate fromDate_localDate = LocalDate.parse(fromDate);
+        LocalDate toDate_localDate = LocalDate.parse(toDate);
+        int dayCount = (int) DAYS.between(fromDate_localDate, toDate_localDate);
+        if (dayCount < 0) {
+            return new ResponseEntity<List>(Collections.singletonList("toDate must be after fromDate"), HttpStatus.BAD_REQUEST);
+        }
 
         HttpResponse<JsonNode> bestHotelResponse = null;
         HttpResponse<JsonNode> crazyHotelResponse = null;
@@ -64,17 +69,15 @@ public class AvailableHotelController {
             JSONObject jsonObject;
             JSONArray array;
             if (null != bestHotelResponse) {
-                jsonObject = new JSONObject(bestHotelResponse.getBody());
+                jsonObject = new org.json.JSONObject(bestHotelResponse.getBody());
                 array = jsonObject.getJSONArray("array");
-                LocalDate fromDate_localDate = LocalDate.parse(fromDate);
-                LocalDate toDate_localDate = LocalDate.parse(toDate);
                 for (int i = 0; i < array.length(); i++) {
                     AvailableHotel hotel = new AvailableHotel();
                     hotel.setProvider("BestHotels");
                     hotel.setHotelName(array.getJSONObject(i).getString("hotel"));
                     hotel.setAmenities(array.getJSONObject(i).getString("roomAmenities").split(","));
                     hotel.setRate(array.getJSONObject(i).getInt("hotelRate"));
-                    int dayCount = (int) DAYS.between(fromDate_localDate, toDate_localDate);
+
                     hotel.setFare(Double.parseDouble(df.format(array.getJSONObject(i).getDouble("hotelFare") / dayCount)));
                     availableHotels.add(hotel);
                 }
@@ -108,11 +111,12 @@ public class AvailableHotelController {
             //TODO make custom exception
             e.printStackTrace();
         }
+
         return new ResponseEntity<List>(availableHotels, HttpStatus.OK);
     }
 
 
-    private HttpResponse<JsonNode> getBestHotelResponse(String fromDate, String toDate, String city, int numberOfAdults){
+    private HttpResponse<JsonNode> getBestHotelResponse(String fromDate, String toDate, String city, int numberOfAdults) {
         HttpResponse<JsonNode> bestHotelResponse = null;
         try {
             bestHotelResponse = Unirest.get("http://localhost:8099/hotelResource/bestHotel")
@@ -121,6 +125,7 @@ public class AvailableHotelController {
                     .queryString("fromDate", fromDate)
                     .queryString("toDate", toDate)
                     .queryString("numberOfAdults", numberOfAdults)
+                    .basicAuth("user1", "secret1")
                     .asJson();
         } catch (UnirestException e) {
             //TODO make custom exception
@@ -130,7 +135,7 @@ public class AvailableHotelController {
         return bestHotelResponse;
     }
 
-    private HttpResponse<JsonNode> getCrazyHotelResponse(String fromDate, String toDate, String city, int numberOfAdults){
+    private HttpResponse<JsonNode> getCrazyHotelResponse(String fromDate, String toDate, String city, int numberOfAdults) {
         HttpResponse<JsonNode> crazyHotelResponse = null;
         try {
             crazyHotelResponse = Unirest.get("http://localhost:8099/hotelResource/crazyHotel")
@@ -139,6 +144,7 @@ public class AvailableHotelController {
                     .queryString("from", fromDate)
                     .queryString("To", toDate)
                     .queryString("adultsCount", numberOfAdults)
+                    .basicAuth("user1", "secret1")
                     .asJson();
         } catch (UnirestException e) {
             //TODO make custom exception
