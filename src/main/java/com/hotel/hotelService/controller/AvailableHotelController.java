@@ -5,6 +5,7 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import io.swagger.annotations.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
@@ -26,17 +27,31 @@ import java.util.List;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
-
+@Api(value = "Available hotel Resource")
 @RestController
 @Validated
 public class AvailableHotelController {
 
 
+    @ApiOperation(value = "Returns 'availableHotels from resource'", notes = "api that return available hotels from multi providers ordering by rate")
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "List of available hotels")})
     @GetMapping("/availableHotel")
-    public ResponseEntity<List> availableHotel(@RequestParam("fromDate") @NotBlank(message = "fromDate may not be empty or null") @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}", message = "Invalid fromDate pattern, must be YYYY-MM-DD") String fromDate,
-                                               @RequestParam("toDate") @NotBlank(message = "toDate may not be empty or null") @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}", message = "Invalid toDate pattern, must be YYYY-MM-DD") String toDate,
-                                               @RequestParam("city") @Size(min = 3, max = 3, message = "city should be IATA code with 3 char length") @NotBlank(message = "city may not be empty or null") String city,
-                                               @RequestParam("numberOfAdults") int numberOfAdults) {
+    public ResponseEntity<List> availableHotel(@ApiParam(value = "From date with YYYY-MM-DD format", required = true)
+                                               @RequestParam("fromDate") @NotBlank(message = "fromDate may not be empty or null")
+                                               @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}", message = "Invalid fromDate pattern, must be YYYY-MM-DD")
+                                                       String fromDate,
+                                               @ApiParam(value = "To date with YYYY-MM-DD format", required = true)
+                                               @RequestParam("toDate") @NotBlank(message = "toDate may not be empty or null")
+                                               @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}", message = "Invalid toDate pattern, must be YYYY-MM-DD")
+                                                       String toDate,
+                                               @ApiParam(value = "City code should be IATA code", required = true)
+                                               @RequestParam("city") @Size(min = 3, max = 3, message = "city should be IATA code with 3 char length")
+                                               @NotBlank(message = "city may not be empty or null")
+                                                       String city,
+                                               @ApiParam(value = "Number of adults should be at least 1", required = true)
+                                               @RequestParam("numberOfAdults") @Size(min = 1, message = "numberOfAdults should be at least one adult")
+                                               @NotBlank(message = "numberOfAdults may not be empty or null")
+                                                       int numberOfAdults) {
 
         HttpResponse<JsonNode> bestHotelResponse = null;
         HttpResponse<JsonNode> crazyHotelResponse = null;
@@ -97,28 +112,38 @@ public class AvailableHotelController {
     }
 
 
-    private HttpResponse<JsonNode> getBestHotelResponse(String fromDate, String toDate, String city, int numberOfAdults) throws UnirestException {
+    private HttpResponse<JsonNode> getBestHotelResponse(String fromDate, String toDate, String city, int numberOfAdults){
         HttpResponse<JsonNode> bestHotelResponse = null;
-        bestHotelResponse = Unirest.get("http://localhost:8099/hotelResource/bestHotel")
-                .header("accept", "application/json")
-                .queryString("city", city)
-                .queryString("fromDate", fromDate)
-                .queryString("toDate", toDate)
-                .queryString("numberOfAdults", numberOfAdults)
-                .asJson();
+        try {
+            bestHotelResponse = Unirest.get("http://localhost:8099/hotelResource/bestHotel")
+                    .header("accept", "application/json")
+                    .queryString("city", city)
+                    .queryString("fromDate", fromDate)
+                    .queryString("toDate", toDate)
+                    .queryString("numberOfAdults", numberOfAdults)
+                    .asJson();
+        } catch (UnirestException e) {
+            //TODO make custom exception
+            e.printStackTrace();
+        }
 
         return bestHotelResponse;
     }
 
-    private HttpResponse<JsonNode> getCrazyHotelResponse(String fromDate, String toDate, String city, int numberOfAdults) throws UnirestException {
+    private HttpResponse<JsonNode> getCrazyHotelResponse(String fromDate, String toDate, String city, int numberOfAdults){
         HttpResponse<JsonNode> crazyHotelResponse = null;
-        crazyHotelResponse = Unirest.get("http://localhost:8099/hotelResource/crazyHotel")
-                .header("accept", "application/json")
-                .queryString("city", city)
-                .queryString("from", fromDate)
-                .queryString("To", toDate)
-                .queryString("adultsCount", numberOfAdults)
-                .asJson();
+        try {
+            crazyHotelResponse = Unirest.get("http://localhost:8099/hotelResource/crazyHotel")
+                    .header("accept", "application/json")
+                    .queryString("city", city)
+                    .queryString("from", fromDate)
+                    .queryString("To", toDate)
+                    .queryString("adultsCount", numberOfAdults)
+                    .asJson();
+        } catch (UnirestException e) {
+            //TODO make custom exception
+            e.printStackTrace();
+        }
         return crazyHotelResponse;
     }
 }
